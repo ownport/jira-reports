@@ -29,6 +29,13 @@ class Profile(object):
         '''
         return self._profile.get('jira.password', None)
 
+    @property
+    def storage(self):
+        ''' returns storage path
+        '''
+        return self._profile.get('jira.issues.storage', None)
+
+
     def jql(self, alias=None):
         ''' returns JQL by alias
         if no aliases are specified, returns the list of aliases in the profile
