@@ -26,7 +26,7 @@ def run():
             if not os.path.exists(profile_path):
                 print >> sys.stderr, '[ERROR] The path to profile does not exist, %s' % profile
                 sys.exit(1)
-            print process(profile_path, args.alias, {'dump': args.dump, 'report': args.report}
+            print process(profile_path, args.alias, **{'dump': args.dump, 'report': args.report})
     else:
         parser.print_help()
 
@@ -45,10 +45,10 @@ def process(profile_path, alias, **opts):
 
     if 'dump' in opts and opts['dump']:
         print >> sys.stderr, '[INFO] Dumping issues into the storage: %s' % opts['dump']
-        dump(_profile.hostname, _profile.username, _profile.password, _profile.get('jira.issues.storage', None))
+        dump(JQL, _profile.hostname, _profile.username, _profile.password, _profile.storage)
 
 
-def dump(hostname, username, password, storage_path):
+def dump(JQL, hostname, username, password, storage_path):
     ''' dump issues to the file storage
     '''
     _storage = Storage(storage_path)
