@@ -17,7 +17,7 @@ class JiraAPI(object):
     def search(self, JQL, maxResults=2000, expand="changelog"):
         ''' search issues by JQL and returns the list of issues
         '''
-        for issue in jira_server.search_issues(JQL, maxResults=2000, expand="changelog"):
+        for issue in self._jira_server.search_issues(JQL, maxResults=2000, expand="changelog"):
             yield self._handle_issue(issue)
 
 
