@@ -1,0 +1,4 @@
+- install: six==1.10.0
+- install: jira == 1.0.7
+- install: PyYAML == 3.12
+- install: sqlitedict
