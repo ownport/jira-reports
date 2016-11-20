@@ -1,8 +1,0 @@
-- name: install pytest
-  install: pytest
-
-- name: install pytest-cov
-  install: pytest-cov
-
-- name: install codecov
-  install: codecov
