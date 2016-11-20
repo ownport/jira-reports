@@ -5,6 +5,4 @@ RUN apk add --update make python py-pip && \
 
 COPY conf/*.yml /tmp/
 
-RUN pkgstack \
-    --profile /tmp/dev-packages.yml \
-    --profile /tmp/required-packages.yml
+RUN pkgstack --profile /tmp/packages.yml --stage=test
