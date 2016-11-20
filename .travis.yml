@@ -14,8 +14,7 @@ install:
   - pip install ${PIP_OPTS} pkgstack
 
 script:
-  - pkgstack --profile conf/required-packages.yml
-  - pkgstack --profile conf/dev-packages.yml
+  - pkgstack --profile conf/packages.yml --stage test
   - pip install --editable .
   - make test-all-with-coverage
 
