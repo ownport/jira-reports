@@ -1,0 +1,11 @@
+- install: six==1.10.0
+  target: jirareports/vendor/
+
+- install: jira == 1.0.7
+  target: jirareports/vendor/
+
+- install: PyYAML == 3.12
+  target: jirareports/vendor/
+
+- install: sqlitedict
+  target: jirareports/vendor/
