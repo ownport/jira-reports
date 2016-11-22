@@ -1,6 +1,8 @@
 
 import os
-import yaml
+import utils
+
+yaml = utils.import_module('yaml', package='jirareports')
 
 class Profile(object):
 
