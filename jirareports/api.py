@@ -1,7 +1,10 @@
 
-from jira import JIRA
+import utils
+
 from storage import Storage
 
+
+jira = utils.import_module('jira', package='jirareports')
 
 class JiraAPI(object):
 
@@ -11,7 +14,7 @@ class JiraAPI(object):
         self._username = username
         self._password = password
 
-        self._jira_server = JIRA(self._host, basic_auth=(self._username, self._password))
+        self._jira_server = jira.JIRA(self._host, basic_auth=(self._username, self._password))
 
 
     def search(self, JQL, maxResults=2000, expand="changelog"):
