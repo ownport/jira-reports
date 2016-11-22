@@ -1,12 +1,14 @@
 
-from sqlitedict import SqliteDict
+import utils
+
+sqlitedict = utils.import_module('sqlitedict', package='jirareports')
 
 
 class Storage(object):
 
     def __init__(self, path):
 
-        self._storage = SqliteDict(path)
+        self._storage = sqlitedict.SqliteDict(path, autocommit=True)
 
 
     def put(self, issue_id, **details):
