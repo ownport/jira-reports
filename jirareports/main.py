@@ -26,7 +26,7 @@ def run():
             if not os.path.exists(profile_path):
                 print >> sys.stderr, '[ERROR] The path to profile does not exist, %s' % profile
                 sys.exit(1)
-            print process(profile_path, args.alias, **{'dump': args.dump, 'report': args.report})
+            process(profile_path, args.alias, **{'dump': args.dump, 'report': args.report})
     else:
         parser.print_help()
 
@@ -35,7 +35,7 @@ def process(profile_path, alias, **opts):
 
     _profile = Profile(profile_path)
     if not alias and 'jira.jqls.default' not in _profile.jql():
-        raise RuntimeError('The alias from command line and default alias in the profile are not specified')
+        raise RuntimeError('The alias is not specified')
 
     JQL = None
     if alias:
@@ -55,4 +55,7 @@ def dump(JQL, hostname, username, password, storage_path):
     _api = JiraAPI(hostname, username, password)
 
     for issue in _api.search(JQL):
-        _storage.put(issue.pull('issue'), issue)
+        sys.stdout.write('.')
+        _storage.put(issue['issue'], **issue)
+    print
+    
