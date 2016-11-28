@@ -52,3 +52,15 @@ class Profile(object):
             raise RuntimeError('The alias "%s" is absent in the profile: %s' % (alias, self._path))
         else:
             return jqls.get(alias, None)
+
+    @property
+    def ignored_fields(self):
+        ''' returns fields which shall be ignored
+        '''
+        return self._profile.get('jira.reports.preprocessing.fields.ignore', None)
+
+    @property
+    def changelog_mapping(self):
+        ''' returns changelog mapping for merging issue fields with changelog
+        '''
+        return self._profile.get('jira.reports.preprocessing.changelog.mapping', None)
