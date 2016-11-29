@@ -244,7 +244,6 @@ class IssueTimeline(object):
 
     def _calc_timeintervals(self, fields):
 
-        print '--- _calc_timeintervals ---'
         result = dict()
         for fieldname, events in fields.items():
             if isinstance(events, list):
@@ -278,5 +277,47 @@ class IssueTimeline(object):
                 result[fieldname] = new_events
             else:
                 result[fieldname] = events
-        print '--- _calc_timeintervals ---'
+
+        for fieldname, events in result.items():
+            print fieldname, events
+            if isinstance(events, list):
+                duration, new_events = self._optimize_timeintervals(list(events))
+                if duration == 0:
+                    result[fieldname] = new_events
+                else:
+                    raise RuntimeError(events, new_events)
+                    # retult[fieldname] = events
+            else:
+                result[fieldname] = events
+
         return result
+
+    def _optimize_timeintervals(self, intervals):
+        ''' returns duration and time intervals for specific values
+
+        if the duration is not equal 0, time intervals optimization was failed
+
+        for better understanding the logic below please see
+        - tests/test_api_issue_timeline.py#test_api_issue_timeline_experiment_01
+        '''
+        print intervals
+        big_ts1, big_ts2, big_val1, big_val2 = intervals.pop(0)
+        duration = big_ts2 - big_ts1
+
+        if len(intervals) == 0:
+            return 0, (big_ts1, big_ts2, big_val2)
+
+        result = list()
+        sm_ts1, sm_ts2, sm_val1, sm_val2 = (0, 0, None, None)
+        while len(intervals) > 0:
+            sm_ts1, sm_ts2, sm_val1, sm_val2 = intervals.pop(0)
+            if sm_ts1 == big_ts1 and sm_ts2 <= big_ts2:
+                big_ts1 = sm_ts2
+                result.append([sm_ts1, sm_ts2, sm_val1])
+                duration = duration - (sm_ts2 - sm_ts1)
+
+        if big_ts1 == sm_ts2 and big_ts2 > sm_ts2:
+            result.append([big_ts1, big_ts2, big_val2])
+            duration = duration - (big_ts2 - big_ts1)
+
+        return duration, result
