@@ -139,7 +139,7 @@ def reports(storage_path, ignored_fields, changelog_mapping):
         pprint(timeline.fields())
         print "============="
 
-        break
+        # break
     #     print
     #
     #     changelog = Changelog(issue['changelog']['histories'])
