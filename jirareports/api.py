@@ -4,6 +4,7 @@ import json
 import logging
 
 
+from time import time
 from datetime import datetime
 from operator import itemgetter
 
@@ -102,9 +103,12 @@ class IssueChangelog(object):
 
             # simplify 'items' fields
             for i, item in enumerate(log[u'items']):
+                # removing 'from', 'to', 'fieldtype'
                 log[u'items'][i].pop('from', None)
                 log[u'items'][i].pop('to', None)
                 log[u'items'][i].pop('fieldtype', None)
+                # make field name in lower case
+                log[u'items'][i]['field'] = log[u'items'][i]['field'].lower()
             result.append(log)
         return IssueChangelog(result)
 
@@ -158,7 +162,7 @@ class IssueFields(object):
     def rename(self, fieldsmap):
         ''' rename issue fields according to fieldsmap
         '''
-        return IssueFields({fieldsmap.get(k, k): v for k,v in self._fields.items()})
+        return IssueFields({fieldsmap.get(k, k).lower(): v for k,v in self._fields.items()})
 
 
     def filter(self, rules):
@@ -182,10 +186,15 @@ class IssueFields(object):
         for k,v in self._fields.items():
             # check if the field contains known datatime formats
             if isinstance(v, (str, unicode)) and re.search(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d+', v):
-                result[k] = to_epoch(v)
+                result[k.lower()] = to_epoch(v)
             else:
-                result[k] = v
+                result[k.lower()] = v
         return IssueFields(result)
+
+    def lower_keys(self):
+        ''' make lower keys for fields map
+        '''
+        return IssueFields(dict([(k.lower(), v) for k,v in self._fields.items()]))
 
 
 class IssueEvents(object):
@@ -206,7 +215,9 @@ class IssueEvents(object):
         for k, v in self._fields.items():
             print k,v
 
-
+#
+#   Warning! all keys for fields and changelogs shall be in lower case
+#
 class IssueTimeline(object):
 
     def __init__(self, issue_id, fields, changelog, mapping):
@@ -222,14 +233,22 @@ class IssueTimeline(object):
         result = dict()
 
         issue_fields = self._fields.fields()
-        created = [v for k, v in issue_fields.items() if k.lower() == 'created'][0]
-        updated = [v for k, v in issue_fields.items() if k.lower() == 'updated'][0]
+
+        created = issue_fields.get(u'created')
+        updated = issue_fields.get(u'updated')
+        status = issue_fields.get(u'status.name')
+        current_time = int(time())
 
         for k,v in issue_fields.items():
             if k.lower() == 'created' or k.lower() == 'updated':
                 result[k] = v
                 continue
-            result[k] = [(created, updated, None, v)]
+
+            if status.lower() == 'closed':
+                result[k] = [(created, updated, None, v)]
+            else:
+                result[k] = [(created, current_time, None, v)]
+
 
         for log in self._changelog.logs():
             for item in log['items']:
@@ -279,45 +298,19 @@ class IssueTimeline(object):
                 result[fieldname] = events
 
         for fieldname, events in result.items():
-            print fieldname, events
             if isinstance(events, list):
-                duration, new_events = self._optimize_timeintervals(list(events))
-                if duration == 0:
+                duration, new_events = utils.optimize_timeintervals(list(events))
+                if duration in [0, -1]:
                     result[fieldname] = new_events
                 else:
-                    raise RuntimeError(events, new_events)
+                    raise RuntimeError({
+                        'fieldname': fieldname,
+                        'duration': duration,
+                        'events.before': events,
+                        'events.after': new_events
+                    })
                     # retult[fieldname] = events
             else:
                 result[fieldname] = events
 
         return result
-
-    def _optimize_timeintervals(self, intervals):
-        ''' returns duration and time intervals for specific values
-
-        if the duration is not equal 0, time intervals optimization was failed
-
-        for better understanding the logic below please see
-        - tests/test_api_issue_timeline.py#test_api_issue_timeline_experiment_01
-        '''
-        print intervals
-        big_ts1, big_ts2, big_val1, big_val2 = intervals.pop(0)
-        duration = big_ts2 - big_ts1
-
-        if len(intervals) == 0:
-            return 0, (big_ts1, big_ts2, big_val2)
-
-        result = list()
-        sm_ts1, sm_ts2, sm_val1, sm_val2 = (0, 0, None, None)
-        while len(intervals) > 0:
-            sm_ts1, sm_ts2, sm_val1, sm_val2 = intervals.pop(0)
-            if sm_ts1 == big_ts1 and sm_ts2 <= big_ts2:
-                big_ts1 = sm_ts2
-                result.append([sm_ts1, sm_ts2, sm_val1])
-                duration = duration - (sm_ts2 - sm_ts1)
-
-        if big_ts1 == sm_ts2 and big_ts2 > sm_ts2:
-            result.append([big_ts1, big_ts2, big_val2])
-            duration = duration - (big_ts2 - big_ts1)
-
-        return duration, result
