@@ -122,22 +122,20 @@ def reports(storage_path, ignored_fields, changelog_mapping):
     logger.info('Update issue events')
 
     logger.info('Collecting field list')
-    fieldsmap = {v['id']:v['name'] for k,v in Storage(name='fields', path=storage_path).get()}
+    # keys and values in the fields map shall be in lower case
+    fieldsmap = {v['id'].lower():v['name'].lower() for k,v in Storage(name='fields', path=storage_path).get()}
 
     for _key, issue in Storage(name='issues', path=storage_path).get():
 
         issue_fields = IssueFields(issue['fields']).rename(fieldsmap)
-        issue_fields = issue_fields.flatten().filter(ignored_fields).simplify()
+        issue_fields = issue_fields.flatten().lower_keys().filter(ignored_fields).simplify()
         # pprint(issue_fields.fields())
-        print "-------------"
 
         changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
         # pprint([l for l in changelog])
-        # print "============="
 
         timeline = IssueTimeline(_key, issue_fields, changelog, changelog_mapping).timeline()
         pprint(timeline.fields())
-        print "============="
 
         # break
     #     print
