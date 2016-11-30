@@ -58,3 +58,33 @@ def dict2flat(root_name, source, removeEmptyFields=False):
         if source is not None:
             flat_dict[root_name] = source
     return flat_dict
+
+
+def optimize_timeintervals(intervals):
+    ''' returns duration and time intervals for specific values
+
+    if the duration is not equal 0, time intervals optimization was failed
+
+    for better understanding the logic below please see
+    - tests/test_api_issue_timeline.py#test_api_issue_timeline_experiment_01
+    '''
+    big_ts1, big_ts2, big_val1, big_val2 = intervals.pop(0)
+    duration = big_ts2 - big_ts1
+
+    if len(intervals) == 0:
+        return 0, (big_ts1, big_ts2, big_val2)
+
+    result = list()
+    sm_ts1, sm_ts2, sm_val1, sm_val2 = (0, 0, None, None)
+    while len(intervals) > 0:
+        sm_ts1, sm_ts2, sm_val1, sm_val2 = intervals.pop(0)
+        if sm_ts1 == big_ts1 and sm_ts2 <= big_ts2+1:
+            big_ts1 = sm_ts2
+            result.append([sm_ts1, sm_ts2, sm_val1])
+            duration = duration - (sm_ts2 - sm_ts1)
+
+    if big_ts1 == sm_ts2 and big_ts2 > sm_ts2:
+        result.append([big_ts1, big_ts2, big_val2])
+        duration = duration - (big_ts2 - big_ts1)
+
+    return duration, result
