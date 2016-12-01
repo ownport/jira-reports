@@ -24,6 +24,7 @@ from api import JiraAPI
 from api import IssueFields
 from api import IssueChangelog
 from api import IssueTimeline
+from api import IssueCheckpoints
 
 from profile import Profile
 from storage import Storage
@@ -134,8 +135,11 @@ def reports(storage_path, ignored_fields, changelog_mapping):
         changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
         # pprint([l for l in changelog])
 
-        timeline = IssueTimeline(_key, issue_fields, changelog, changelog_mapping).timeline()
-        pprint(timeline.fields())
+        checkpoints = IssueCheckpoints(_key, issue_fields, changelog, changelog_mapping).checkpoints()
+        pprint(dict([
+            (k, utils.create_timeintervals(v) if isinstance(v, list) else v)
+                for k,v in checkpoints.fields().items()]
+        ))
 
         # break
     #     print
