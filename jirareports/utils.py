@@ -2,6 +2,8 @@
 import re
 import importlib
 
+from operator import itemgetter
+
 def import_module(name, package=None):
     ''' returns imported module (vendored)
     '''
@@ -68,6 +70,26 @@ def optimize_timeintervals(intervals):
     for better understanding the logic below please see
     - tests/test_api_issue_timeline.py#test_api_issue_timeline_experiment_01
     '''
+    # duration = 0
+    # result = list()
+    # ts1, ts2, val1, val2 = 0, 0, None, None
+    # for i, (_ts1, _ts2, _val1, _val2) in enumerate(intervals):
+    #     if i == 0:
+    #         ts1, ts2, val1, val2 = _ts1, _ts2, _val1, _val2
+    #         continue
+    #     print (ts1, ts2), (_ts1, _ts2)
+    #     checkpoints = sorted(set([ts1, ts2, _ts1, _ts2]))
+    #
+    #     # print "A1==B1", (1, 1, 1, 1) if _ts1 == ts1 else (0, 0, 1, 1)
+    #     # print "A1<=B1", (1, 1, 1, 1) if _ts1 >= ts1 else (1, 1, 1, 1)
+    #     # print "A2==B2", (1, 1, 1, 1) if _ts2 == ts2 else (1, 1, 0, 0)
+    #     # print "A2<=B1", (1, 1, 1, 1) if _ts1 >= ts2 else (1, 1, 1, 1)
+    #     # print "A2<=B2", (1, 1, 1, 1) if _ts2 >= ts2 else (1, 1, 1, 1)
+    #     # print "A2>=B2", (1, 1, 1, 1) if _ts2 <= ts2 else (1, 1, 1, 1)
+    #     #
+    #
+    #     result.append([_ts1, _ts2, _val1, _val2])
+
     big_ts1, big_ts2, big_val1, big_val2 = intervals.pop(0)
     duration = big_ts2 - big_ts1
 
@@ -76,15 +98,37 @@ def optimize_timeintervals(intervals):
 
     result = list()
     sm_ts1, sm_ts2, sm_val1, sm_val2 = (0, 0, None, None)
-    while len(intervals) > 0:
-        sm_ts1, sm_ts2, sm_val1, sm_val2 = intervals.pop(0)
+    for sm_ts1, sm_ts2, sm_val1, sm_val2 in intervals:
         if sm_ts1 == big_ts1 and sm_ts2 <= big_ts2+1:
             big_ts1 = sm_ts2
             result.append([sm_ts1, sm_ts2, sm_val1])
             duration = duration - (sm_ts2 - sm_ts1)
+            continue
 
     if big_ts1 == sm_ts2 and big_ts2 > sm_ts2:
         result.append([big_ts1, big_ts2, big_val2])
         duration = duration - (big_ts2 - big_ts1)
 
     return duration, result
+
+
+def optimize_checkpoints(checkpoints):
+
+    result = list()
+    return result
+
+def create_timeintervals(checkpoints):
+
+    result = list()
+
+    prev_checkpoint = (None, None, None)
+    for curr_checkpoint in sorted(checkpoints, key=itemgetter(0)):
+        if prev_checkpoint == (None, None, None):
+            prev_checkpoint = curr_checkpoint
+            continue
+        if prev_checkpoint[0] < curr_checkpoint[0] and curr_checkpoint[1]:
+            result.append((prev_checkpoint[0], curr_checkpoint[0], curr_checkpoint[1]))
+            prev_checkpoint = curr_checkpoint
+            continue
+
+    return result
