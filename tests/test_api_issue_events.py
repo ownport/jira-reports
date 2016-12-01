@@ -22,7 +22,10 @@ FIELDS_SAMPLE = {
     u'customfield_02': 2000,
     u'customfield_03': 3000,
     u'customfield_04': 4000,
-    u'updated': u'2016-09-12T14:30:13.000+0000',
+    u'updated': u'2016-09-12T14:31:13.000+0000',
+    u'status': {
+        u'name': 'Closed',
+    }
 }
 
 CHANGELOG_SAMPLE = [
@@ -99,7 +102,19 @@ CHANGELOG_SAMPLE = [
 ]
 
 CHANGELOG_MAPPING_SAMPLE = {
+    u'assignee': u'assignee.name',
+    u'status': u'status.name',
+}
 
+FIELDS_SAMPLE_FOR_OPTIMIZATION = {
+    u'status': [
+        (1449084416, None, None),
+        (1473161751, None, u'Closed'),
+        (1449158492, u'Open', u'Resolved'),
+        (1449159411, u'Resolved', u'Closed'),
+        (1453240059, u'Closed', u'Resolved'),
+        (1473161751, u'Resolved', u'Closed')
+    ],
 }
 
 def test_api_issue_events_create():
@@ -119,3 +134,46 @@ def test_api_issue_events_events():
         api.IssueChangelog(CHANGELOG_SAMPLE),
         CHANGELOG_MAPPING_SAMPLE
     )
+
+def test_api_issue_checkpoints_create():
+
+    issue_checkpoints = api.IssueCheckpoints(
+        '01',
+        api.IssueFields(FIELDS_SAMPLE),
+        api.IssueChangelog(CHANGELOG_SAMPLE),
+        CHANGELOG_MAPPING_SAMPLE
+    )
+    assert isinstance(issue_checkpoints, api.IssueCheckpoints)
+
+
+def test_api_issue_checkpoints_checkpoints():
+
+    fields = api.IssueFields(FIELDS_SAMPLE).flatten().lower_keys().simplify()
+    changelog = api.IssueChangelog(CHANGELOG_SAMPLE).simplify().sort()
+
+    checkpoints = api.IssueCheckpoints(
+        '01', fields, changelog, CHANGELOG_MAPPING_SAMPLE
+    ).checkpoints()
+    assert isinstance(checkpoints, api.IssueFields)
+
+    fields_with_checkpoints = checkpoints.fields()
+    assert set(fields_with_checkpoints.keys()) == set([
+        u'assignee.active',
+        u'assignee.avatarurls.16x16',
+        u'assignee.avatarurls.24x24',
+        u'assignee.avatarurls.32x32',
+        u'assignee.avatarurls.48x48',
+        u'assignee.displayname',
+        u'assignee.emailaddress',
+        u'assignee.name',
+        u'assignee.self',
+        u'created',
+        u'customfield_01',
+        u'customfield_02',
+        u'customfield_03',
+        u'customfield_04',
+        u'status.name',
+        u'updated',
+    ])
+    assert fields_with_checkpoints[u'created'] == 1448996999
+    assert fields_with_checkpoints[u'updated'] == 1473690673

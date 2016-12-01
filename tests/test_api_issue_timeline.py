@@ -30,6 +30,18 @@ TIME_INTERVALS_03 = [
     [1480338303, 1480338304, None, u'28/Nov/16']
 ]
 
+FIELDS_SAMPLE = {
+    u'status': [
+        (1449084416, None, None),
+        (1473161751, None, u'Closed'),
+        (1449158492, u'Open', u'Resolved'),
+        (1449159411, u'Resolved', u'Closed'),
+        (1453240059, u'Closed', u'Resolved'),
+        (1473161751, u'Resolved', u'Closed')
+    ],
+}
+
+
 def test_api_issue_timeline_experiment_01():
     ''' create the list of intervals for each value
     '''
@@ -70,6 +82,7 @@ def test_api_issue_timeline_experiment_02():
 def test_api_issue_timeline_experiment_03():
     ''' create the list of intervals for each value
     '''
+    return
     _time_intervals = list(TIME_INTERVALS_03)
 
     duration, result = optimize_timeintervals(_time_intervals)
