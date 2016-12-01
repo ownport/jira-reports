@@ -184,11 +184,12 @@ class IssueFields(object):
         '''
         result = dict()
         for k,v in self._fields.items():
+            k = k.lower()
             # check if the field contains known datatime formats
             if isinstance(v, (str, unicode)) and re.search(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d+', v):
-                result[k.lower()] = to_epoch(v)
+                result[k] = to_epoch(v)
             else:
-                result[k.lower()] = v
+                result[k] = v
         return IssueFields(result)
 
     def lower_keys(self):
@@ -215,6 +216,51 @@ class IssueEvents(object):
         for k, v in self._fields.items():
             print k,v
 
+
+class IssueCheckpoints(object):
+
+    def __init__(self, issue_id, fields, changelog, mapping):
+
+        self._issue_id = issue_id
+        self._fields = fields
+        self._changelog = changelog
+        self._mapping = mapping
+
+    def checkpoints(self):
+
+        result = dict()
+
+        issue_fields = self._fields.fields()
+
+        current_time = int(time())
+        created = issue_fields.get(u'created')
+        updated = issue_fields.get(u'updated')
+        status = issue_fields.get(u'status.name')
+
+        # check fields
+        for k,v in issue_fields.items():
+            if k.lower() == 'created' or k.lower() == 'updated':
+                result[k] = v
+                continue
+
+            if status.lower() == 'closed':
+                result[k] = [(created, None, None), (updated, None, v), (current_time, v, None)]
+            else:
+                result[k] = [(created, None, None), (current_time, v, None)]
+
+        # check changelogs
+        for log in self._changelog.logs():
+            for item in log['items']:
+                fieldname = self._mapping.get(item['field'], item['field'])
+                if fieldname in result:
+                    result[fieldname].append((log['created'], item['fromString'], item['toString']))
+                else:
+                    logger.warning('Cannot find the changelog field in the issues fields, %s' % fieldname)
+
+        return IssueFields(result)
+
+
+
 #
 #   Warning! all keys for fields and changelogs shall be in lower case
 #
@@ -227,6 +273,7 @@ class IssueTimeline(object):
         self._changelog = changelog
         self._mapping = mapping
         self._timeline = list()
+
 
     def timeline(self):
 
