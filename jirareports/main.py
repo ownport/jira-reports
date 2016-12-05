@@ -3,7 +3,6 @@ import os
 import sys
 import argparse
 
-
 import logging
 # Set default logging handler to avoid "No handler found" warnings.
 try:  # Python 2.7+
@@ -20,14 +19,17 @@ from __init__ import __version__
 
 import utils
 
+from profile import Profile
+from storage import Storage
+
 from api import JiraAPI
 from api import IssueFields
 from api import IssueChangelog
 from api import IssueTimeline
 from api import IssueCheckpoints
 
-from profile import Profile
-from storage import Storage
+from metrics import MetricsProcessor
+
 
 from pprint import pprint
 
@@ -126,22 +128,26 @@ def reports(storage_path, ignored_fields, changelog_mapping):
     # keys and values in the fields map shall be in lower case
     fieldsmap = {v['id'].lower():v['name'].lower() for k,v in Storage(name='fields', path=storage_path).get()}
 
-    for _key, issue in Storage(name='issues', path=storage_path).get():
-
-        issue_fields = IssueFields(issue['fields']).rename(fieldsmap)
-        issue_fields = issue_fields.flatten().lower_keys().filter(ignored_fields).simplify()
-        # pprint(issue_fields.fields())
-
-        changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
-        # pprint([l for l in changelog])
-
-        checkpoints = IssueCheckpoints(_key, issue_fields, changelog, changelog_mapping).checkpoints()
-        pprint(dict([
-            (k, utils.create_timeintervals(v) if isinstance(v, list) else v)
-                for k,v in checkpoints.fields().items()]
-        ))
-
-        # break
-    #     print
+    # intervals = Storage(name='intervals', path=storage_path)
+    # for _key, issue in Storage(name='issues', path=storage_path).get():
     #
-    #     changelog = Changelog(issue['changelog']['histories'])
+    #     issue_fields = IssueFields(issue['fields']).rename(fieldsmap)
+    #     issue_fields = issue_fields.flatten().lower_keys().filter(ignored_fields).simplify()
+    #     # pprint(issue_fields.fields())
+    #
+    #     changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
+    #     # pprint([l for l in changelog])
+    #
+    #     checkpoints = IssueCheckpoints(_key, issue_fields, changelog, changelog_mapping).checkpoints()
+    #     intervals.put(_key, dict([ (k, utils.create_timeintervals(v) if isinstance(v, list) else v)
+    #                                     for k,v in checkpoints.fields().items()]))
+    # intervals.close()
+
+    metrics_processor = MetricsProcessor(name='issue.created', pattern=r'^created$', roundto=86400)
+    result = list()
+    for k,v in Storage(name='intervals', path=storage_path).get():
+        # result.extend(metrics.process(k,v))
+        v['issue_id'] = k
+        metrics_processor.add_event(v)
+    metrics_processor.process()
+    # print metrics_processor.metrics()
