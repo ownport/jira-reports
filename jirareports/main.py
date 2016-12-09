@@ -143,11 +143,15 @@ def reports(storage_path, ignored_fields, changelog_mapping):
     #                                     for k,v in checkpoints.fields().items()]))
     # intervals.close()
 
-    metrics_processor = MetricsProcessor(name='issue.created', pattern=r'^created$', roundto=86400)
-    result = list()
+    metrics = {
+        'created issues': MetricsProcessor(name='issue.created', key_pattern=r'^created$', roundto=86400),
+        'closed issues': MetricsProcessor(name='issue.closed', key_pattern=r'status', value='Closed', roundto=86400)
+    }
     for k,v in Storage(name='intervals', path=storage_path).get():
-        # result.extend(metrics.process(k,v))
         v['issue_id'] = k
-        metrics_processor.add_event(v)
-    metrics_processor.process()
+        for name in metrics:
+            metrics[name].add_event(v)
+
+    for name in metrics:
+        print name, metrics[name].json()
     # print metrics_processor.metrics()
