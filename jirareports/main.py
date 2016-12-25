@@ -28,8 +28,8 @@ from api import IssueChangelog
 from api import IssueTimeline
 from api import IssueCheckpoints
 
-from metrics import MetricsProcessor
-
+import dt
+import metrics
 
 from pprint import pprint
 
@@ -87,71 +87,73 @@ def process(profile_path, alias, **opts):
             logger.error('JQL is not specified in profile "%s" for alias "%s"' % (profile_path, alias))
             sys.exit(1)
 
-        dump(JQL, _profile.hostname, _profile.username, _profile.password, _profile.storage)
+        dump(JQL, _profile)
         sys.exit(0)
 
     if 'reports' in opts and opts['reports']:
         logger.info('Collecting data for reports')
-        reports(_profile.storage, _profile.ignored_fields, _profile.changelog_mapping)
+        reports(_profile)
         logger.info('Data collection for reports was completed')
         sys.exit(0)
 
     logger.info('Dumping issues into the storage')
 
 
-def dump(JQL, hostname, username, password, storage_path):
+def dump(JQL, profile):
     ''' dump issues to the file storage
     '''
-    logger.info('Storage path: %s' % storage_path)
-    _api = JiraAPI(hostname, username, password)
+    logger.info('Storage path: %s' % profile.storage_path)
+    _api = JiraAPI(profile.hostname, profile.username, profile.password)
 
     # fields
-    _storage = Storage(name='fields', path=storage_path)
+    logger.info('Updating field list')
+    _storage = Storage(name='fields', path=profile.storage)
     for field in _api.fields():
         _storage.put(field['id'], field)
     _storage.close()
 
     # issues
-    _storage = Storage(name='issues', path=storage_path)
+    _storage = Storage(name='issues', path=profile.storage)
     for n, issue in enumerate(_api.search(JQL)):
         _storage.put(issue['key'], issue)
     logger.info('Issues dump was completed, total issues: %s' % (n+1))
     _storage.close()
 
+    logger.info('Preparing fields map')
+    # fieldsmap
+    # keys and values in the fields map shall be in lower case
+    fieldsmap = {v['id'].lower():v['name'].lower() for k,v in Storage(name='fields', path=profile.storage).get()}
 
-def reports(storage_path, ignored_fields, changelog_mapping):
+    logger.info('Updating changelog')
+    intervals = Storage(name='intervals', path=profile.storage)
+    for _key, issue in Storage(name='issues', path=profile.storage).get():
+        issue_fields = IssueFields(issue['fields']).rename(fieldsmap)
+        issue_fields = issue_fields.flatten().lower_keys().filter(profile.ignored_fields).simplify()
+
+        changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
+        # pprint([l for l in changelog.logs()])
+        # sys.exit()
+
+        checkpoints = IssueCheckpoints(_key, issue_fields, changelog, profile.changelog_mapping).checkpoints()
+        intervals.put(_key, dict([ (k, utils.create_timeintervals(v) if isinstance(v, list) else v)
+                                        for k,v in checkpoints.fields().items()]))
+    intervals.close()
+    logger.info('Changelog update was completed')
+
+
+def reports(profile):
     ''' prepare data for reporting
     '''
-    logger.info('Update issue events')
-
-    logger.info('Collecting field list')
-    # keys and values in the fields map shall be in lower case
-    fieldsmap = {v['id'].lower():v['name'].lower() for k,v in Storage(name='fields', path=storage_path).get()}
-
-    # intervals = Storage(name='intervals', path=storage_path)
-    # for _key, issue in Storage(name='issues', path=storage_path).get():
-    #
-    #     issue_fields = IssueFields(issue['fields']).rename(fieldsmap)
-    #     issue_fields = issue_fields.flatten().lower_keys().filter(ignored_fields).simplify()
-    #     # pprint(issue_fields.fields())
-    #
-    #     changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
-    #     # pprint([l for l in changelog])
-    #
-    #     checkpoints = IssueCheckpoints(_key, issue_fields, changelog, changelog_mapping).checkpoints()
-    #     intervals.put(_key, dict([ (k, utils.create_timeintervals(v) if isinstance(v, list) else v)
-    #                                     for k,v in checkpoints.fields().items()]))
-    # intervals.close()
-
-    metrics = {
-        'created issues': MetricsProcessor(name='issue.created', key_pattern=r'^created$', roundto=86400),
-        'closed issues': MetricsProcessor(name='issue.closed', key_pattern=r'status', value='Closed', roundto=86400)
-    }
-    for k,v in Storage(name='intervals', path=storage_path).get():
+    logger.info('Collecting metrics')
+    roundto = 86400
+    # metrics processors
+    mtrcs = {}
+    for k,v in Storage(name='intervals', path=profile.storage).get():
         v['issue_id'] = k
-        for name in metrics:
-            metrics[name].add_event(v)
+        for name in mtrcs:
+            mtrcs[name].add_event(v)
 
-    for name in metrics:
-        print name, metrics[name].json()
+    for name in mtrcs:
+        filtered_metrics = mtrcs[name].metrics().filter(dt.now()-3*dt.day(30), dt.now()).conv(mtrcs[name].roundto)
+        open('html/data/%s.json' % name, 'w').write(filtered_metrics.json())
     # print metrics_processor.metrics()
