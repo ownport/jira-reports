@@ -255,7 +255,7 @@ class IssueCheckpoints(object):
                 if fieldname in result:
                     result[fieldname].append((log['created'], item['fromString'], item['toString']))
                 else:
-                    logger.warning('Cannot find the changelog field in the issues fields, %s' % fieldname)
+                    logger.debug('Cannot find the changelog field in the issues fields, %s' % fieldname)
 
         return IssueFields(result)
 
