@@ -1,161 +1,116 @@
 var common_width = 600;
-var common_height = 200;
+var common_height = 250;
 
-d3.json('data/fake_users1.json', function(data) {
+d3.json('data/created-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #1",
-        description: "This is a simple line chart.",
-        data: MG.convert.date(data, 'date'),
+        title: "The number of created issues/tasks per day",
+        description: "The chart shows the number of created issues or tasks per day",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
         // color: '#4D4D4D',
-        target: '#fake_users1',
-        x_accessor: 'date',
+        target: '#created-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
 
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
+d3.json('data/closed-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #2",
-        description: "This is a simple line chart.",
-        data: data,
+        title: "The number of closed issues/tasks per day",
+        description: "The chart shows the number of closed issues or tasks per day",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
-        // color: '#5DA5DA',
-        target: document.getElementById('fake_users2'),
-        x_accessor: 'date',
+        // color: '#4D4D4D',
+        target: '#closed-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
 
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
+
+d3.json('data/open-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #3",
-        description: "This is a simple line chart.",
-        data: data,
+        title: "The number of issues in Open state per day",
+        description: "The chart shows the number of issues or tasks in Open state per day",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
-        // color: '#FAA43A',
-        target: document.getElementById('fake_users3'),
-        x_accessor: 'date',
+        // color: '#4D4D4D',
+        target: '#open-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
 
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
+d3.json('data/in-progress-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #4",
-        description: "This is a simple line chart.",
-        data: data,
+        title: "The number of issues in 'In progress' state per day",
+        description: "The chart shows the number of issues or tasks in 'In progress' state per day",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
-        // color: '#60BD68',
-        target: document.getElementById('fake_users4'),
-        x_accessor: 'date',
+        // color: '#4D4D4D',
+        target: '#in-progress-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
 
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
+d3.json('data/on-hold-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #5",
-        description: "This is a simple line chart.",
-        data: data,
+        title: "The number of issues in 'On hold' state per day",
+        description: "The chart shows the number of issues or tasks in 'On hold' state per day",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
-        // color: '#F17CB0',
-        target: document.getElementById('fake_users5'),
-        x_accessor: 'date',
+        // color: '#4D4D4D',
+        target: '#on-hold-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
 
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
+d3.json('data/resolved-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #6",
-        description: "This is a simple line chart.",
-        data: data,
+        title: "The number of issues in Resolved state per day",
+        description: "The chart shows the number of issues or tasks in Resolved state per day",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
-        // color: '#B2912F',
-        target: document.getElementById('fake_users6'),
-        x_accessor: 'date',
+        // color: '#4D4D4D',
+        target: '#resolved-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
 
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
+d3.json('data/not-closed-issues.json', function(data) {
     MG.data_graphic({
-        title: "Line Chart #6",
-        description: "This is a simple line chart.",
-        data: data,
+        title: "The number of not closed issues per day",
+        description: "The chart shows the number of issues or tasks which are not closed per day."
+                    + " The issues are in state: Open, In Progress, Resolved, On Hold, etc",
+        data: MG.convert.date(data, 'datetime', '%Y-%m-%d'),
         width: common_width,
         height: common_height,
+        left: 40,
         right: 40,
-        // color: '#B276B2',
-        target: document.getElementById('fake_users7'),
-        x_accessor: 'date',
-        y_accessor: 'value'
-    });
-});
-
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
-    MG.data_graphic({
-        title: "Line Chart #6",
-        description: "This is a simple line chart.",
-        data: data,
-        width: common_width,
-        height: common_height,
-        right: 40,
-        // color: '#DECF3F',
-        target: document.getElementById('fake_users8'),
-        x_accessor: 'date',
-        y_accessor: 'value'
-    });
-});
-
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
-    MG.data_graphic({
-        title: "Line Chart #6",
-        description: "This is a simple line chart.",
-        data: data,
-        width: common_width,
-        height: common_height,
-        right: 40,
-        // color: '#F15854',
-        target: document.getElementById('fake_users9'),
-        x_accessor: 'date',
-        y_accessor: 'value'
-    });
-});
-
-d3.json('data/fake_users1.json', function(data) {
-    data = MG.convert.date(data, 'date');
-    MG.data_graphic({
-        title: "Line Chart #6",
-        description: "This is a simple line chart.",
-        data: data,
-        width: common_width,
-        height: common_height,
-        right: 40,
-        // color: '#8C001A',
-        target: document.getElementById('fake_users10'),
-        x_accessor: 'date',
+        // color: '#4D4D4D',
+        target: '#not-closed-issues',
+        x_accessor: 'datetime',
         y_accessor: 'value'
     });
 });
