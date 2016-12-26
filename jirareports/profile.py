@@ -64,3 +64,9 @@ class Profile(object):
         ''' returns changelog mapping for merging issue fields with changelog
         '''
         return self._profile.get('jira.reports.preprocessing.changelog.mapping', None)
+
+    @property
+    def metrics(self):
+        ''' returns the list of metrics
+        '''
+        return self._profile.get('jira.metrics', None)
