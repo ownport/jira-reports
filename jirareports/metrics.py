@@ -1,4 +1,5 @@
 
+import os
 import re
 import json
 import logging
@@ -90,14 +91,22 @@ class MetricsStorage(object):
 
 class MetricsProcessor(object):
 
-    def __init__(self, pattern, includes=(), excludes=(), roundto=900):
+    def __init__(self, pattern, includes=(), excludes=(), roundto=900, path=None):
 
         self._pattern = re.compile(pattern)
         self._includes = [v.lower() for v in includes]
         self._excludes = [v.lower() for v in excludes]
         self._storage = MetricsStorage()
 
+        if not path or not os.path.exists(path):
+            raise IOError('The path to the metrics does not exist, %s' % path)
+        self._path = path
+
         self.roundto = roundto
+
+    @property
+    def path(self):
+        return self._path
 
     def metrics(self):
 
@@ -139,9 +148,9 @@ class EdgeMetric(MetricsProcessor):
     - first-right
     - first-left
     '''
-    def __init__(self, pattern, includes=(), excludes=(), roundto=900, select=None):
+    def __init__(self, pattern, includes=(), excludes=(), roundto=900, select=None, path=None):
 
-        super(EdgeMetric, self).__init__(pattern, includes, excludes, roundto)
+        super(EdgeMetric, self).__init__(pattern, includes, excludes, roundto, path)
         self._select = None
         if select and select not in ('last-left', 'last-right', 'first-left', 'first-right'):
             raise RuntimeError('Unknown value for select parameter: %s' % select)
@@ -191,6 +200,7 @@ class MultiPatternMetric(object):
             raise RuntimeError('Incorrect type of processors paramater, expected list, founded: %s' % type(metrics))
         self._processors = processors
         self.roundto = list(set([proc.roundto for proc in self._processors]))[0]
+        self.path = list(set([proc.path for proc in self._processors]))[0]
         self._storage = MetricsStorage()
 
     def add_event(self, fields):
