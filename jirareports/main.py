@@ -145,9 +145,41 @@ def reports(profile):
     ''' prepare data for reporting
     '''
     logger.info('Collecting metrics')
-    roundto = 86400
     # metrics processors
+    # TODO: !!! optimize selection of metrics processors
     mtrcs = {}
+    for m in profile.metrics:
+        if m['type'] == 'SimpleMetric':
+            mtrcs[m['name']] = metrics.SimpleMetric(
+                                    pattern=m['pattern'],
+                                    roundto=m['roundto'],
+                                    path=m['path'])
+        elif m['type'] == 'EdgeMetric':
+            mtrcs[m['name']] = metrics.EdgeMetric(
+                                    pattern=m['pattern'],
+                                    includes=m.get('includes', []),
+                                    excludes=m.get('excludes', []),
+                                    roundto=m['roundto'],
+                                    select=m['select'],
+                                    path=m['path'])
+        elif m['type'] == 'RangeMetric':
+            mtrcs[m['name']] = metrics.RangeMetric(
+                                    pattern=m['pattern'],
+                                    includes=m.get('includes', []),
+                                    excludes=m.get('excludes', []),
+                                    roundto=m['roundto'],
+                                    path=m['path'])
+        elif m['type'] == 'MultiPatternMetric':
+            # ONLY RangeMetric processor is supported
+            mtrcs[m['name']] = metrics.MultiPatternMetric(*[
+                                    metrics.RangeMetric(
+                                        pattern=rm['pattern'],
+                                        includes=rm.get('includes', []),
+                                        excludes=rm.get('excludes', []),
+                                        roundto=rm['roundto'],
+                                        path=rm['path']
+                                    ) for rm in m['metrics']])
+
     for k,v in Storage(name='intervals', path=profile.storage).get():
         v['issue_id'] = k
         for name in mtrcs:
@@ -155,5 +187,5 @@ def reports(profile):
 
     for name in mtrcs:
         filtered_metrics = mtrcs[name].metrics().filter(dt.now()-3*dt.day(30), dt.now()).conv(mtrcs[name].roundto)
-        open('html/data/%s.json' % name, 'w').write(filtered_metrics.json())
+        open(os.path.join(mtrcs[name].path, '%s.json' % name), 'w').write(filtered_metrics.json())
     # print metrics_processor.metrics()
