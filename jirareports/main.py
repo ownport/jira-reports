@@ -59,15 +59,18 @@ def run():
                         format="%(asctime)s (%(name)s) [%(levelname)s] %(message)s"
     )
 
-    if args.profile:
-        for profile_path in args.profile:
-            if not os.path.exists(profile_path):
-                logger.error('The path to profile does not exist, %s' % profile_path)
-                sys.exit(1)
-            process(profile_path, args.alias, **{'dump': args.dump, 'reports': args.reports})
-    else:
-        parser.print_help()
-
+    try:
+        if args.profile:
+            for profile_path in args.profile:
+                if not os.path.exists(profile_path):
+                    logger.error('The path to profile does not exist, %s' % profile_path)
+                    sys.exit(1)
+                process(profile_path, args.alias, **{'dump': args.dump, 'reports': args.reports})
+        else:
+            parser.print_help()
+    except KeyboardInterrupt:
+        print("Interrupted by user")
+        sys.exit(1)
 
 def process(profile_path, alias, **opts):
 
@@ -102,7 +105,7 @@ def process(profile_path, alias, **opts):
 def dump(JQL, profile):
     ''' dump issues to the file storage
     '''
-    logger.info('Storage path: %s' % profile.storage_path)
+    logger.info('Storage path: %s' % profile.storage)
     _api = JiraAPI(profile.hostname, profile.username, profile.password)
 
     # fields
