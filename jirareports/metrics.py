@@ -57,7 +57,7 @@ class MetricsStorage(object):
         return MetricsStorage(metrics=result)
 
     def conv(self, roundto):
-        ''' convert datetime key according to roundto parameter
+        ''' convert datetime key (epochtime) according to roundto parameter
         '''
         result = [
             {
@@ -109,7 +109,6 @@ class MetricsProcessor(object):
         return self._path
 
     def metrics(self):
-
         return self._storage
 
 
