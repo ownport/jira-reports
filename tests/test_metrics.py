@@ -88,3 +88,17 @@ def test_metrics_processor_create(tmpdir):
 
     with pytest.raises(IOError):
         p = metrics.MetricsProcessor(pattern='test')
+
+# ==========================================================================================
+#
+#   SimpleMetric
+#
+#
+
+def test_simple_metric_create():
+
+    m = metrics.SimpleMetric()
+    assert isinstance(m, metrics.SimpleMetric)
+
+
+    
