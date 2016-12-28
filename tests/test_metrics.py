@@ -95,10 +95,15 @@ def test_metrics_processor_create(tmpdir):
 #
 #
 
-def test_simple_metric_create():
+def test_simple_metric_create(tmpdir):
 
-    m = metrics.SimpleMetric()
+    tmp_path = str(tmpdir.mkdir('test-simple-metric-create'))
+    m = metrics.SimpleMetric(pattern='test', path=tmp_path)
     assert isinstance(m, metrics.SimpleMetric)
 
 
-    
+def test_simple_metric_add_event(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-simple-metric-add-event'))
+    m = metrics.SimpleMetric(pattern='test', path=tmp_path)
+    assert m.add_event({'test': 1482960650}) == [{'datetime': 1482960600, 'value': 1},]

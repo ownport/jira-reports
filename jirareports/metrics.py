@@ -123,10 +123,12 @@ class SimpleMetric(MetricsProcessor):
         for k,value in fields.items():
             if self._pattern.search(k):
 
-                if self._includes and value not in self._includes:
-                    continue
-                if self._excludes and value in self._excludes:
-                    continue
+                # is it really needed?
+                
+                # if self._includes and value not in self._includes:
+                #     continue
+                # if self._excludes and value in self._excludes:
+                #     continue
 
                 _result.append({'datetime': dt.roundto(value, self.roundto), 'value': 1})
 
