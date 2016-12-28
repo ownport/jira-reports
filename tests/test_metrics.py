@@ -3,6 +3,11 @@ import pytest
 
 from jirareports import metrics
 
+# ==========================================================================================
+#
+#   MetricsStorage
+#
+#
 
 def test_metrics_storage_create():
 
@@ -65,3 +70,21 @@ def test_metrics_storage_conv():
         {'datetime': '2016-12-18', 'value': 1},
         {'datetime': '2016-12-28', 'value': 1},
     ]).json()
+
+# ==========================================================================================
+#
+#   MetricsProcessor
+#
+#
+
+def test_metrics_processor_create(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-metrics-processor-create'))
+    p = metrics.MetricsProcessor(pattern='test', path=tmp_path)
+
+    assert p.path == tmp_path
+    assert isinstance(p, metrics.MetricsProcessor)
+    assert isinstance(p.metrics(), metrics.MetricsStorage)
+
+    with pytest.raises(IOError):
+        p = metrics.MetricsProcessor(pattern='test')
