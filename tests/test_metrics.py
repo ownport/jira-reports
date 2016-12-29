@@ -107,3 +107,101 @@ def test_simple_metric_add_event(tmpdir):
     tmp_path = str(tmpdir.mkdir('test-simple-metric-add-event'))
     m = metrics.SimpleMetric(pattern='test', path=tmp_path)
     assert m.add_event({'test': 1482960650}) == [{'datetime': 1482960600, 'value': 1},]
+
+# ==========================================================================================
+#
+#   EdgeMetric
+#
+#
+
+def test_edge_metric_create(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-edge-metric-create'))
+    m = metrics.EdgeMetric(pattern='test', path=tmp_path)
+    assert isinstance(m, metrics.EdgeMetric)
+
+    with pytest.raises(RuntimeError):
+        m = metrics.EdgeMetric(pattern='test', path=tmp_path, select='something')
+
+
+def test_edge_metric_add_event(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-edge-metric-add-event'))
+    m = metrics.EdgeMetric(pattern='test', path=tmp_path)
+
+    # key/value, where value is integer
+    assert m.add_event({'test': 1482960650}) == []
+
+    # key/value, where value is the list of (dt_start, dt_end, value)
+    assert m.add_event({'test': [(1482960650, 148296065, 'value')]}) == []
+
+
+def test_edge_metric_add_event_last_left(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-edge-metric-add-event-last-left'))
+    m = metrics.EdgeMetric(pattern='test', path=tmp_path, select='last-left', includes=('value',), roundto=900)
+
+    assert m.add_event(
+                    {'test': [(1482960000, 1482970000, 'value')]}
+                ) == [{'datetime': 1482959700, 'value': 1}]
+
+    assert m.add_event(
+                    {'test': [(1482950000, 1482960000, 'value'), (1482960000, 1482970000, 'value')]},
+                ) == [{'datetime': 1482959700, 'value': 1}]
+
+    m = metrics.EdgeMetric(pattern='test', path=tmp_path, select='last-left', excludes=('value',), roundto=900)
+
+    assert m.add_event({'test': [(1482960000, 1482970000, 'value')]}) == []
+    assert m.add_event({'test': [(1482950000, 1482960000, 'value'), (1482960000, 1482970000, 'value')]},) == []
+
+# ==========================================================================================
+#
+#   RangeMetric
+#
+#
+def test_range_metric_add_event(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-range-metric-add-event'))
+    m = metrics.RangeMetric(pattern='test', path=tmp_path, roundto=900, includes=('value',))
+
+    # key/value, where value is the list of (dt_start, dt_end, value)
+    for p in m.add_event({'test': [(1482960000, 1482965000, 'value')]}):
+        assert p in [
+                        {'datetime': 1482959700, 'value': 1},
+                        {'datetime': 1482960600, 'value': 1},
+                        {'datetime': 1482961500, 'value': 1},
+                        {'datetime': 1482962400, 'value': 1},
+                        {'datetime': 1482963300, 'value': 1},
+                        {'datetime': 1482964200, 'value': 1},
+                    ]
+
+# ==========================================================================================
+#
+#   MultiPatternMetric
+#
+#
+
+def test_multi_pattern_metric_create(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-multi-pattern-metric-create'))
+    m = metrics.MultiPatternMetric(
+                    metrics.RangeMetric(pattern='test1', path=tmp_path, roundto=900, includes=('value1',)),
+                    metrics.RangeMetric(pattern='test2', path=tmp_path, roundto=900, includes=('value2',))
+    )
+    assert isinstance(m, metrics.MultiPatternMetric)
+
+
+def test_multi_pattern_metric_add_event(tmpdir):
+
+    tmp_path = str(tmpdir.mkdir('test-multi-pattern-metric-add-event'))
+    m = metrics.MultiPatternMetric(
+                    metrics.RangeMetric(pattern='test1', path=tmp_path, roundto=900, includes=('value1',)),
+                    metrics.RangeMetric(pattern='test2', path=tmp_path, roundto=900, includes=('value2',))
+    )
+
+    for p in m.add_event({'test1': [(1482960000, 1482965000, 'value1')],'test2': [(1482960000, 1482962000, 'value2')],}):
+        assert p in [
+                        {'datetime': 1482959700, 'value': 1},
+                        {'datetime': 1482960600, 'value': 1},
+                        {'datetime': 1482961500, 'value': 1},
+        ]

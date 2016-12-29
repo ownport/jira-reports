@@ -124,7 +124,7 @@ class SimpleMetric(MetricsProcessor):
             if self._pattern.search(k):
 
                 # is it really needed?
-                
+
                 # if self._includes and value not in self._includes:
                 #     continue
                 # if self._excludes and value in self._excludes:
@@ -197,8 +197,6 @@ class MultiPatternMetric(object):
 
     def __init__(self, *processors):
 
-        if not isinstance(processors, (list, tuple)):
-            raise RuntimeError('Incorrect type of processors paramater, expected list, founded: %s' % type(metrics))
         self._processors = processors
         self.roundto = list(set([proc.roundto for proc in self._processors]))[0]
         self.path = list(set([proc.path for proc in self._processors]))[0]
@@ -216,6 +214,8 @@ class MultiPatternMetric(object):
                     filter(lambda k: len(grouped_metrics[k]) == len(self._processors), grouped_metrics)
         )
         self._storage.add(_result)
+        return _result
+
 
     def metrics(self):
 
