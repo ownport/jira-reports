@@ -67,6 +67,10 @@ class MetricsStorage(object):
         ]
         return MetricsStorage(metrics=result)
 
+    def items(self):
+
+        return self._metrics
+
 
     def json(self):
         ''' returns metrics in JSON format
@@ -94,6 +98,10 @@ class MetricsProcessor(object):
     def __init__(self, pattern, includes=(), excludes=(), roundto=900, path=None):
 
         self._pattern = re.compile(pattern)
+        if not isinstance(includes, (list, tuple)):
+            raise RuntimeError('Incorrect includes type: %s' % type(includes))
+        if not isinstance(excludes, (list, tuple)):
+            raise RuntimeError('Incorrect excludes type: %s' % type(excludes))
         self._includes = [v.lower() for v in includes]
         self._excludes = [v.lower() for v in excludes]
         self._storage = MetricsStorage()
@@ -110,6 +118,14 @@ class MetricsProcessor(object):
 
     def metrics(self):
         return self._storage
+
+    def __str__(self):
+        return "%s(pattern=%s,includes=%s,excludes=%s)" % (
+                    self.__class__,
+                    self._pattern.pattern,
+                    self._includes,
+                    self._excludes
+        )
 
 
 class SimpleMetric(MetricsProcessor):
@@ -220,3 +236,42 @@ class MultiPatternMetric(object):
     def metrics(self):
 
         return self._storage
+
+
+def get_metric_processors(metrics):
+
+    # TODO: !!! optimize selection of metrics processors
+
+    _result = {}
+    for m in metrics:
+        if m['type'] == 'SimpleMetric':
+            _result[m['name']] = SimpleMetric(
+                                    pattern=m['pattern'],
+                                    roundto=m['roundto'],
+                                    path=m['path'])
+        elif m['type'] == 'EdgeMetric':
+            _result[m['name']] = EdgeMetric(
+                                    pattern=m['pattern'],
+                                    includes=m.get('includes', []),
+                                    excludes=m.get('excludes', []),
+                                    roundto=m['roundto'],
+                                    select=m['select'],
+                                    path=m['path'])
+        elif m['type'] == 'RangeMetric':
+            _result[m['name']] = RangeMetric(
+                                    pattern=m['pattern'],
+                                    includes=m.get('includes', []),
+                                    excludes=m.get('excludes', []),
+                                    roundto=m['roundto'],
+                                    path=m['path'])
+        elif m['type'] == 'MultiPatternMetric':
+            # ONLY RangeMetric processor is supported
+            _result[m['name']] = MultiPatternMetric(*[
+                                    RangeMetric(
+                                        pattern=rm['pattern'],
+                                        includes=rm.get('includes', []),
+                                        excludes=rm.get('excludes', []),
+                                        roundto=rm['roundto'],
+                                        path=rm['path']
+                                    ) for rm in m['metrics']])
+    return _result
