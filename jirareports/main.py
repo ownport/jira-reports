@@ -42,6 +42,7 @@ def run():
             action='append', help='the path to the package profile, yaml file')
     parser.add_argument('-a', '--alias', help='the JQL alias in the profile')
     parser.add_argument('-d', '--dump', action='store_true', help='dump issues to file storage')
+    parser.add_argument('-u', '--update', action='store_true', help='update checkpoints')
     parser.add_argument('-r', '--reports', action='store_true', help='generate reports')
     parser.add_argument('-l', '--logging', type=str,
             help='logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL')
@@ -65,7 +66,11 @@ def run():
                 if not os.path.exists(profile_path):
                     logger.error('The path to profile does not exist, %s' % profile_path)
                     sys.exit(1)
-                process(profile_path, args.alias, **{'dump': args.dump, 'reports': args.reports})
+                process(profile_path, args.alias, **{
+                            'dump': args.dump,
+                            'update': args.update,
+                            'reports': args.reports
+                })
         else:
             parser.print_help()
     except KeyboardInterrupt:
@@ -91,15 +96,17 @@ def process(profile_path, alias, **opts):
             sys.exit(1)
 
         dump(JQL, _profile)
-        sys.exit(0)
 
-    if 'reports' in opts and opts['reports']:
+    elif 'update' in opts and opts['update']:
+        logger.info('Updating checkpoints for reports')
+        update(_profile)
+        logger.info('Updating checkpoints for reports was completed')
+
+    elif 'reports' in opts and opts['reports']:
         logger.info('Collecting data for reports')
         reports(_profile)
         logger.info('Data collection for reports was completed')
-        sys.exit(0)
 
-    logger.info('Dumping issues into the storage')
 
 
 def dump(JQL, profile):
@@ -122,6 +129,9 @@ def dump(JQL, profile):
     logger.info('Issues dump was completed, total issues: %s' % (n+1))
     _storage.close()
 
+
+def update(profile):
+
     logger.info('Preparing fields map')
     # fieldsmap
     # keys and values in the fields map shall be in lower case
@@ -131,64 +141,34 @@ def dump(JQL, profile):
     intervals = Storage(name='intervals', path=profile.storage)
     for _key, issue in Storage(name='issues', path=profile.storage).get():
         issue_fields = IssueFields(issue['fields']).rename(fieldsmap)
-        issue_fields = issue_fields.flatten().lower_keys().filter(profile.ignored_fields).simplify()
 
-        changelog = IssueChangelog(issue['changelog']['histories']).simplify().sort()
-        # pprint([l for l in changelog.logs()])
-        # sys.exit()
-
-        checkpoints = IssueCheckpoints(_key, issue_fields, changelog, profile.changelog_mapping).checkpoints()
+        checkpoints = IssueCheckpoints(
+                            _key,
+                            issue_fields.flatten().lower_keys().filter(profile.ignored_fields).simplify(),
+                            IssueChangelog(issue['changelog']['histories']).simplify().sort(),
+                            profile.changelog_mapping
+        ).checkpoints()
         intervals.put(_key, dict([ (k, utils.create_timeintervals(v) if isinstance(v, list) else v)
                                         for k,v in checkpoints.fields().items()]))
     intervals.close()
     logger.info('Changelog update was completed')
 
 
+
 def reports(profile):
     ''' prepare data for reporting
     '''
     logger.info('Collecting metrics')
+
     # metrics processors
-    # TODO: !!! optimize selection of metrics processors
-    mtrcs = {}
-    for m in profile.metrics:
-        if m['type'] == 'SimpleMetric':
-            mtrcs[m['name']] = metrics.SimpleMetric(
-                                    pattern=m['pattern'],
-                                    roundto=m['roundto'],
-                                    path=m['path'])
-        elif m['type'] == 'EdgeMetric':
-            mtrcs[m['name']] = metrics.EdgeMetric(
-                                    pattern=m['pattern'],
-                                    includes=m.get('includes', []),
-                                    excludes=m.get('excludes', []),
-                                    roundto=m['roundto'],
-                                    select=m['select'],
-                                    path=m['path'])
-        elif m['type'] == 'RangeMetric':
-            mtrcs[m['name']] = metrics.RangeMetric(
-                                    pattern=m['pattern'],
-                                    includes=m.get('includes', []),
-                                    excludes=m.get('excludes', []),
-                                    roundto=m['roundto'],
-                                    path=m['path'])
-        elif m['type'] == 'MultiPatternMetric':
-            # ONLY RangeMetric processor is supported
-            mtrcs[m['name']] = metrics.MultiPatternMetric(*[
-                                    metrics.RangeMetric(
-                                        pattern=rm['pattern'],
-                                        includes=rm.get('includes', []),
-                                        excludes=rm.get('excludes', []),
-                                        roundto=rm['roundto'],
-                                        path=rm['path']
-                                    ) for rm in m['metrics']])
+    processors = metrics.get_metric_processors(profile.metrics)
 
     for k,v in Storage(name='intervals', path=profile.storage).get():
         v['issue_id'] = k
-        for name in mtrcs:
-            mtrcs[name].add_event(v)
+        for name in processors:
+            processors[name].add_event(v)
 
-    for name in mtrcs:
-        filtered_metrics = mtrcs[name].metrics().filter(dt.now()-3*dt.day(30), dt.now()).conv(mtrcs[name].roundto)
-        open(os.path.join(mtrcs[name].path, '%s.json' % name), 'w').write(filtered_metrics.json())
-    # print metrics_processor.metrics()
+    for pname, proc in processors.items():
+        filtered_metrics = proc.metrics().filter(dt.now()-3*dt.day(30), dt.now()).conv(proc.roundto)
+        logger.info('%d points for metric: %s' % (len(filtered_metrics.items()), pname))
+        open(os.path.join(proc.path, '%s.json' % pname), 'w').write(filtered_metrics.json())
