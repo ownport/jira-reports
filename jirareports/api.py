@@ -5,29 +5,15 @@ import logging
 
 
 from time import time
-from datetime import datetime
 from operator import itemgetter
 
 logger = logging.getLogger(__name__)
 
+import dt
 import utils
 from storage import Storage
 
 jira = utils.import_module('jira', package='jirareports')
-
-def to_epoch(dt):
-    ''' convert rfc 3339 datetime to epoch
-    '''
-    patterns = [
-        '%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S.%f'
-    ]
-    for pattern in patterns:
-        try:
-            result = datetime.strptime(dt.replace('+0000', ''), pattern)
-            break
-        except ValueError:
-            continue
-    return int(result.strftime('%s'))
 
 
 class JiraAPI(object):
@@ -97,7 +83,7 @@ class IssueChangelog(object):
 
             # simplify 'created' field
             try:
-                log[u'created'] = to_epoch(log[u'created'])
+                log[u'created'] = dt.to_epoch(log[u'created'])
             except:
                 pass
 
@@ -187,7 +173,7 @@ class IssueFields(object):
             k = k.lower()
             # check if the field contains known datatime formats
             if isinstance(v, (str, unicode)) and re.search(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d+', v):
-                result[k] = to_epoch(v)
+                result[k] = dt.to_epoch(v)
             else:
                 result[k] = v
         return IssueFields(result)
