@@ -12,7 +12,24 @@ import calendar
 import datetime
 
 
+
 NOW = calendar.timegm(time.localtime())
+
+
+def to_epoch(dt):
+    ''' convert rfc 3339 datetime to epoch
+    '''
+    patterns = [
+        '%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S.%f'
+    ]
+    for pattern in patterns:
+        try:
+            result = datetime.datetime.strptime(dt.replace('+0000', ''), pattern)
+            break
+        except ValueError:
+            continue
+    return int(result.strftime('%s'))
+
 
 def epoch2dt(epochtime):
     ''' returns epoch time in %Y-%m-%d %H:%M:%S format
